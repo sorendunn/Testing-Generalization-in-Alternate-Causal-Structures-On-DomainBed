@@ -24,6 +24,8 @@ DATASETS = [
     "Debug224",
     # Small images
     "ColoredMNIST",
+    "ColoredRotatedMNIST1",
+    "ColoredRotatedMNIST2"
     "ColoredMNIST_10class",
     "RotatedMNIST",
     # Big images
@@ -119,7 +121,6 @@ class MultipleEnvironmentMNIST(MultipleDomainDataset):
         self.input_shape = input_shape
         self.num_classes = num_classes
 
-
 class ColoredMNIST(MultipleEnvironmentMNIST):
     ENVIRONMENTS = ['+90%', '+80%', '-90%']
 
@@ -131,8 +132,6 @@ class ColoredMNIST(MultipleEnvironmentMNIST):
         self.num_classes = 2
 
     def color_dataset(self, images, labels, environment):
-        # # Subsample 2x for computational convenience
-        # images = images.reshape((-1, 28, 28))[:, ::2, ::2]
         # Assign a binary label based on the digit
         labels = (labels < 5).float()
         # Flip label with probability 0.25
@@ -148,10 +147,145 @@ class ColoredMNIST(MultipleEnvironmentMNIST):
         images[torch.tensor(range(len(images))), (
             1 - colors).long(), :, :] *= 0
 
-        x = images.float().div_(255.0)
+        # Define the rotation angle based on the environment
+        if environment == ('+90%' or 0.1):
+            angle = 15
+        elif environment == ('+80%' or 0.2):
+            angle = 50
+        elif environment == ('-90%' or 0.9):
+            angle = 90
+        else:
+            raise ValueError(f"Unexpected environment: {environment}")
+        
+        # Rotate the image
+        rotation = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Lambda(lambda x: transforms.functional.rotate(x, angle,
+                fill=(0, 0), interpolation=transforms.InterpolationMode.BILINEAR)),
+            transforms.ToTensor()])
+        
+        rotated_images = torch.zeros(len(images), 2, 28, 28)
+        for i in range(len(images)):
+            rotated_images[i] = rotation(images[i])
+
         y = labels.view(-1).long()
 
-        return TensorDataset(x, y)
+        return TensorDataset(rotated_images, y)
+
+    def torch_bernoulli_(self, p, size):
+        return (torch.rand(size) < p).float()
+
+    def torch_xor_(self, a, b):
+        return (a - b).abs()
+
+class ColoredRotatedMNIST1(MultipleEnvironmentMNIST):
+    ENVIRONMENTS = ['+90%', '+80%', '-90%']
+
+    def __init__(self, root, test_envs, hparams):
+        super(ColoredMNIST, self).__init__(root,
+                                 self.color_dataset, (2, 28, 28,), 2, hparams)
+
+        self.input_shape = (2, 28, 28,)
+        self.num_classes = 2
+
+    def color_dataset(self, images, labels, environment):
+        # Assign a binary label based on the digit
+        labels = (labels < 5).float()
+        # Flip label with probability 0.25
+        labels = self.torch_xor_(labels,
+                                 self.torch_bernoulli_(self.hparams['noise_rate'], len(labels)))
+
+        # Assign a color based on the label; flip the color with probability e
+        colors = self.torch_xor_(labels,
+                                 self.torch_bernoulli_(environment,
+                                                       len(labels)))
+        images = torch.stack([images, images], dim=1)
+        # Apply the color to the image by zeroing out the other color channel
+        images[torch.tensor(range(len(images))), (
+            1 - colors).long(), :, :] *= 0
+
+        # Define the rotation angle based on the environment
+        if environment == ('+90%' or 0.1):
+            angle = 0 if torch.rand(1).item() < 0.25 else 15
+        elif environment == ('+80%' or 0.2):
+            angle = 0 if torch.rand(1).item() < 0.25 else 50
+        elif environment == ('-90%' or 0.9):
+            angle = 0 if torch.rand(1).item() < 0.25 else 90
+        else:
+            raise ValueError(f"Unexpected environment: {environment}")
+        
+        # Rotate the image
+        rotation = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Lambda(lambda x: transforms.functional.rotate(x, angle,
+                fill=(0, 0, 0), interpolation=transforms.InterpolationMode.BILINEAR)),
+            transforms.ToTensor()])
+        
+        rotated_images = torch.zeros(len(images), 2, 28, 28)
+        for i in range(len(images)):
+            rotated_images[i] = rotation(images[i])
+
+        y = labels.view(-1).long()
+
+        return TensorDataset(rotated_images, y)
+
+    def torch_bernoulli_(self, p, size):
+        return (torch.rand(size) < p).float()
+
+    def torch_xor_(self, a, b):
+        return (a - b).abs()
+    
+class ColoredRotatedMNIST2(MultipleEnvironmentMNIST):
+    ENVIRONMENTS = ['+90%', '+80%', '-90%']
+
+    def __init__(self, root, test_envs, hparams):
+        super(ColoredMNIST, self).__init__(root,
+                                 self.color_dataset, (2, 28, 28,), 2, hparams)
+
+        self.input_shape = (2, 28, 28,)
+        self.num_classes = 2
+
+    def color_dataset(self, images, labels, environment):
+        # Assign a binary label based on the digit
+        labels = (labels < 5).float()
+        # Flip label with probability 0.25
+        labels = self.torch_xor_(labels,
+                                 self.torch_bernoulli_(self.hparams['noise_rate'], len(labels)))
+
+
+        # Define the rotation angle based on the environment
+        if environment == ('+90%' or 0.1):
+            angle = 0 if torch.rand(1).item() < 0.25 else 15
+        elif environment == ('+80%' or 0.2):
+            angle = 0 if torch.rand(1).item() < 0.25 else 50
+        elif environment == ('-90%' or 0.9):
+            angle = 0 if torch.rand(1).item() < 0.25 else 90
+        else:
+            raise ValueError(f"Unexpected environment: {environment}")
+
+        # Assign a color based on the label; flip the color with probability e
+        colors = self.torch_xor_(labels,
+                                 self.torch_bernoulli_((float(environment)*float(angle/100)),
+                                                       len(labels)))
+        images = torch.stack([images, images], dim=1)
+        # Apply the color to the image by zeroing out the other color channel
+        images[torch.tensor(range(len(images))), (
+            1 - colors).long(), :, :] *= 0
+        
+        # Rotate the image
+        rotation = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Lambda(lambda x: transforms.functional.rotate(x, angle,
+                fill=(0, 0, 0), interpolation=transforms.InterpolationMode.BILINEAR)),
+            transforms.ToTensor()])
+        
+        rotated_images = torch.zeros(len(images), 2, 28, 28)
+        for i in range(len(images)):
+            rotated_images[i] = rotation(images[i])
+
+        y = labels.view(-1).long()
+
+        return TensorDataset(rotated_images, y)
 
     def torch_bernoulli_(self, p, size):
         return (torch.rand(size) < p).float()
@@ -334,6 +468,9 @@ class SVIRO(MultipleEnvironmentImageFolder):
         self.dir = os.path.join(root, "sviro/")
         super().__init__(self.dir, test_envs, hparams)
 
+
+dataset = ColoredMNIST(root='MNIST', test_envs=None, hparams={})
+dataset.save_dataset_as_images('output_images/')
 
 # class WILDSEnvironment:
 #     def __init__(

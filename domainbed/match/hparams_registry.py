@@ -12,7 +12,7 @@ def _hparams(algorithm, dataset, random_seed):
     Global registry of hyperparams. Each entry is a (default, random) tuple.
     New algorithms / networks / etc. should add entries here.
     """
-    SMALL_IMAGES = ['Debug28', 'RotatedMNIST', 'ColoredMNIST', 'ColoredMNIST_10class']
+    SMALL_IMAGES = ['Debug28', 'RotatedMNIST', "ColoredMNIST", "ColoredRotatedMNIST1", "ColoredRotatedMNIST2", 'ColoredMNIST_10class']
 
     hparams = {}
 
@@ -55,12 +55,15 @@ def _hparams(algorithm, dataset, random_seed):
         _hparam('distribution', 'Gaussian', lambda r: 'Gaussian')
         _hparam('batch_size', 32, lambda r: int(2**r.uniform(3, 9)))
 
-    if dataset == 'ColoredMNIST':
+    if (dataset == 'ColoredMNIST') or (dataset == "ColoredRotatedMNIST1") or (dataset == "ColoredRotatedMNIST2"):
         _hparam('noise_rate', 0.25, lambda r: r.choice([0., 0.25, 0.5]))
         _hparam('environments', [0.1, 0.2, 0.9], lambda r: [0.1, 0.2, 0.9])
         _hparam('latent_size', 3, lambda r: 3)
     elif dataset == 'ColoredMNIST_10class':
         _hparam('latent_size', 16, lambda r: 16)
+    elif dataset == "ColoredRotatedMNIST":
+        _hparam('environments', [0, 15, 30, 45, 60, 75], lambda r: [0, 15, 30, 45, 60, 75])
+        _hparam('latent_size', 16, lambda r: 16)    
     elif dataset == 'RotatedMNIST':
         _hparam('environments', [0, 15, 30, 45, 60, 75], lambda r: [0, 15, 30, 45, 60, 75])
         _hparam('latent_size', 16, lambda r: 16)

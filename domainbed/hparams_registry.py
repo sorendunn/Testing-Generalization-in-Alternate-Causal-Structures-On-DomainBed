@@ -12,7 +12,7 @@ def _hparams(algorithm, dataset, random_seed):
     Global registry of hyperparams. Each entry is a (default, random) tuple.
     New algorithms / networks / etc. should add entries here.
     """
-    SMALL_IMAGES = ['Debug28', 'RotatedMNIST', 'ColoredMNIST', 'ColoredMNIST_10class']
+    SMALL_IMAGES = ['Debug28', 'RotatedMNIST',"ColoredMNIST", "ColoredRotatedMNIST1", "ColoredRotatedMNIST2", 'ColoredMNIST_10class']
 
     hparams = {}
 
@@ -127,10 +127,10 @@ def _hparams(algorithm, dataset, random_seed):
     # Dataset-and-algorithm-specific hparam definitions. Each block of code
     # below corresponds to exactly one hparam. Avoid nested conditionals.
 
-    if dataset in ['ColoredMNIST', 'ColoredMNIST_10class']:
+    if dataset in ["ColoredMNIST", "ColoredRotatedMNIST1", "ColoredRotatedMNIST2", 'ColoredMNIST_10class']:
         _hparam('noise_rate', 0.25, lambda r: 0.25)
     
-    if dataset in ['ColoredMNIST', 'ColoredMNIST_10class']:
+    if dataset in ["ColoredMNIST", "ColoredRotatedMNIST1", "ColoredRotatedMNIST2", 'ColoredMNIST_10class']:
         _hparam('environments', [0.1, 0.2, 0.9], lambda r: [0.1, 0.2, 0.9])
     elif dataset == 'RotatedMNIST':
         _hparam('environments', [0, 15, 30, 45, 60, 75], lambda r: [0, 15, 30, 45, 60, 75])
