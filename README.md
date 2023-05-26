@@ -3,8 +3,6 @@
 We propose two modified versions of the MNIST dataset where the spurious features are causal descendants of the labels being predicted and test three algorithms from the DomainBed suite on these alternate causal structures. Even though these algorithms exhibit almost identical performance on the original suite, they have wildly varying performance on the modified synthetic datasets.
 
 
-
-*.png
 A large portion of the code is modified from [DomainBed](https://github.com/facebookresearch/DomainBed), which is a PyTorch suite containing benchmark datasets and algorithms for domain generalization, as introduced in [In Search of Lost Domain Generalization](https://arxiv.org/abs/2007.01434).
 
 ## 0. Setup the repository
